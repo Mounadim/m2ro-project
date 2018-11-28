@@ -1,0 +1,49 @@
+Le problème qu'on a à résoudre est le suivant : affecter n vols différents qui ont une date d'arrivée Ai et une date de départ Di, à m portes dans un aéreport, de façon à avoir un résultat optimal. Pour des raisons de compatibilité, un vol ne peut pas etre affecté à n'importe quelle porte. les portes qui peuvent acceuillir chaque vol sont données dans les fichiers txt : data.
+
+Nous supposons l'abscence des incertitudes et nous nous plaçons dans le cas déterministe. Ce problème peut etre resolu avec la programmation linéaire en nombre entiers.
+
+Language utilisé pour transformer les données : Python
+Solver utilisé pour résoudre le problème : Xpress
+
+Commençons d'abord par notre transformation des données, on a écris un programme qui à partir d'un fichier GAP donné, génere un fichier txt mathématiquement manipulable Celà est fait de la façon suivante :
+
+- La numérotation des vols commence de 1,
+- la numérotation des portes commence aussi de 1,
+- Dans notre modélisation : l'unité de temps est de 5 min, par exemple l'heure 8h55min est représentée par la valeur : 107,
+- les dates d'arrivées et de départs des vols sont exprimées par les vecteurs A et D ( N lignes (nombre de vols) et 2 colonnes (numéro de vol et date d'arrivée/départ)
+- La compatibilité est exprimée à l'aide d'une matrice P, ou un coefficient pjk=1 si le vol j peut etre assigner à la porte k et 0 sinon.
+
+Passons maintenant à la modélisation mathématique du problème, 
+
+- Variables de déscision :
+ 
+       X:  variable de décision d'affectation  (xjk=1: si le vol j est affecté à la porte k et  0 sinon)
+       E:  dates d'entrée des vols aux portes  (Ejk la date d'entrée du vol j dans la porte k)
+       L:  dates de sortie des vols des portes (Ljk la date de sortie du vol j dans la porte k)
+       S:  temps d'inactivité des portes       (dernier temps d'inactivité dans la porte k avant l'entrée du vol j) 
+- Données du problème :
+       A, D, P  : les dates d'arrivées de départs et la matrice de compatibilité contenues dans le fichier des données,
+       G= D-A   : contenant les temps de présence d'un vol au sol.
+       SN+1     : vecteur de taille M qui contient les derniers temps d'inactivités de chaque porte.
+       L0, LN+1 : deux nombres entiers qui représente le temps d'ouverture et le temps de fermeture de chaque porte. 
+                     - On considére que le temps L0 correspond à l'heure de la date d'arrivée du premier vol, et on considère qu'il est constant pour toutes les portes, (Exemple, si la date d'arrivée du premier vol est 8h55 ce qui se traduit par 107 dans notre modélisation, alors L0=96, qui signifie 8h00).
+                     - On considére que le temps LN+1 correspond à l'heure de la date de départ du dernier vol plus 1, il est constant pour toutes les portes, (Exemple, si la date de depart du dernier vol est 8h55 ce qui se traduit par 107 dans notre modélisation, alors L0=108, qui signifie 9h00).
+
+- Fonction objective : l'idée est de minimiser la variance des temps d'inactivité, mais comme on est dans le cas déterministe, la valeur moyenne des temps d'inactivité est constante. De ce fait la fonction objective devient (1). Ceci nous donne une fonction quadratique. Mais le résultat ne changera pas si on passe au cas linéaire. Or dans ce cas on obtient la fonction suivante (10), mais comme L0 et LN+1 sont tous les deux constants, alors la fonction à minimiser est (XX).
+ 
+
+- Contraintes: 
+
+contrainte (2)     : Un vol j doit être affecté à une et une seule porte admissible.
+
+contrainte (3)+(4)+(4bis)+(5) : de 3 et 4 on (max); Si (xjk=1), ce qui veut dire que le vol j est affecté à la porte k, alors Ejk=Aj (date d'entrée du vol j dans la porte k est égal à la date d'arrivée du vol j)   et Ljk=Dj (date de sortie du vol j de la porte k est égal à la date de départ du vol j), sinon la date d'entrée et de sortie du vol j de la porte k seront toutes les deux égales à la derniere date de sortie du vol assigné à la porte k (i.e Ejk=Ljk=Lik=Di) ou i est le dernier vol assigné à la porte k ( s'il n'existe pas on alors Ejk=Ljk=L0k).
+
+contraintes (5) : la date de sortie du vol j de la porte k est égal à la date d'entrée du vol dans la porte k plus le temps passé au sol.
+
+contraintes (6) : le temps d'inactivité de la porte k avant l'entrée du vol j est la différence entre la date d'entrée du vol j dans la porte k et la date de sortie du dernier vol assigné à la porte k avant l'entrée du vol j.
+
+contraintes (7) : le temps d'inactivité après le départ du dernier vol assigné à la porte k.
+
+contraintes (8) : la variable de désicion X est une variable binaire, 1 si le vol j est assigné à la porte k, et 0 sinon.
+
+contraintes (9), (10), (11), (12) : les dates et les temps doivent étre positifs ou nuls.
